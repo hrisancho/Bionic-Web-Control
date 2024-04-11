@@ -1,0 +1,57 @@
+syntax = "proto3";
+import "shared/shared.proto";
+package Commands;
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/commands";
+
+//функция, задающая скорость движения от времени
+enum Easings{
+    linear = 0;
+}
+
+//жесты
+enum Gestures{
+    neutral  = 0; //Прямая ладоно
+    grip = 1; // схватить
+    boatGrip = 2; //захват без сгибания большого пальца, но с его приведением
+    like = 3;
+    victoria = 4;
+    inTouch = 5; //на связи
+}
+
+//Прокрутить сервопривод до заданного в радианах угла
+message ServoGoToAngle{
+    Shared.ServoPosition servo = 1;
+    float angle = 2;
+}
+
+//Стремиться сдерживать сервопривод текущую позицию
+message ServoLock{
+    Shared.ServoPosition servo = 1;
+}
+
+//Остановить удержание позиции
+message ServoUnLock{
+    Shared.ServoPosition servo = 1;
+}
+
+//Постепенное движение сервоприводом
+message ServoSmoothlyMove{
+    Shared.ServoPosition servo = 1;
+    Easings easing = 2; //функция, задающая скорость движения от времени
+    float speed = 3; //средняя путевая скорость
+    float targetAngle = 4; //целевой угол
+}
+
+//Приводить сервопривод до максимума либо до достижения уровня давления в подушечке пальца
+message MoveToTargetPressure{
+    Shared.ServoPosition servo = 1;
+    Shared.Finger finger = 2;
+}
+
+message HoldGesture{
+    Gestures gesture = 1;
+    uint32 duration = 2; //длительность удержания в секундах
+    bool permanent = 3; //нужно ли удерживать пока не поступит другая команда
+}
+

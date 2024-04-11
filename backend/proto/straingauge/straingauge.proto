@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "shared/shared.proto";
+package Staingauge;
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/staingauge";
+//датчики давления на кончиках пальцев
+message StrainGuage{
+  Shared.Finger finger = 1; //палец, на котором расположен датчик
+  uint32 pressure = 2; //измеренное давление
+  string connectionPin = 3; // Пин (порт на плате) к которому будет крепиться тензодатчик
+}

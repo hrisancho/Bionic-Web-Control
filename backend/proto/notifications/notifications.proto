@@ -1,0 +1,8 @@
+syntax = "proto3";
+package Notifications;
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/notifications";
+enum NotificationType{
+    connected = 0;
+    disconnected = 1;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+import "shared/shared.proto";
+package Servo;
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/servo";
+message Servo{
+    Shared.ServoPosition servo = 1; //позиция сервопривода
+    float angle = 2 ; //угол, заданный программно
+    uint32 duty = 4; //сырые данные, из которых выводится угол
+    bool lock = 3; //включен ли режим удержания угла
+    bool move = 5; //находится ли сейчас сервопривод в постепенном движении
+    Shared.ChanelPWM chPWD = 6; // Используемый канал для подключению к ШИМ контроллеру(или типа того)
+    string connectionPin = 7; // Пин (порт на плате) к которому будет крепиться сервопривод
+}

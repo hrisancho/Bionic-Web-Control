@@ -1,0 +1,33 @@
+syntax = "proto3";
+package Imu;
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/imu";
+//6-axis inertial messurment unit
+message IMU{
+    uint32 number = 1; 
+    //в роборуке 3 IMU, расположенных ортогонально друг другу
+    float xAccel = 2;
+    //измеренное ускорение по оси x
+    float yAccel = 3;
+    //измеренное ускорение по оси y
+    float zAccel = 4;
+    //измеренное ускорение по оси z
+    float xAngle = 5;
+    //измеренное угла наклона по оси x
+    float yAngle = 6;
+    //измеренное угла наклона по оси y
+    float zAngle = 7;
+    //измеренное угла наклона по оси z
+    string connectionPin = 8;
+    // Пин (порт на плате) к которому будет крепиться датчик IMU
+}
+
+//отфильтрованные данные, вычисленные с опорой на все 3 IMU
+message ResultIMU{
+    float xAccel = 1;
+    //измеренное ускорение по оси x
+    float yAccel = 2;
+    //измеренное ускорение по оси y
+    float zAccel = 3;
+    //измеренное ускорение по оси z
+}

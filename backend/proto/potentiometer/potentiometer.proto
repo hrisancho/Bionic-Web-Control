@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "shared/shared.proto";
+package Potentiometer;
+
+//go-module-name указывается при инициализацию go.mod и так же в нём указывается
+option go_package = "Bionic-Web-Control/proto/potentiometer";
+
+//измерение угла в суставе
+message Potentiometer{
+    Shared.Finger finger = 1; //Какой палец
+    Position positoin = 2; //Позиция потенцометра
+    uint32 angle = 3; //Угол, измеренный потенциометром
+    string connectionPin = 4; // Пин (порт на плате) к которому будет крепиться датчик потенциометра
+}
+
+enum Position{
+    p0 = 0; //первый сустав
+    //(между кистью и первой фалангой), в случае с большим - привение
+    p1 = 1; //второй сустав
+    //(между первой и второй фалангами), в случае с большим - между кистью и первой фалангой
+    p2 = 2; //третий сустав
+    //перед последней
+}
