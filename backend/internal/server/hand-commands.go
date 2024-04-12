@@ -165,9 +165,6 @@ func (server *Server) handMoveToTargetPressure(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	servoId := c.Params("servo_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Сервопривод указан не правильно")
@@ -175,9 +172,6 @@ func (server *Server) handMoveToTargetPressure(c *fiber.Ctx) error {
 	srvPosition := shared.ServoPosition(uint32(srv))
 
 	fingerId := c.Params("finger_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	fng, fun := shared.Finger_value[fingerId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Палец указан не правильно")

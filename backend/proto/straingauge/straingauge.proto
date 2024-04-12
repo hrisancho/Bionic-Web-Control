@@ -1,6 +1,6 @@
 syntax = "proto3";
 import "shared/shared.proto";
-package Staingauge;
+package Straingauge;
 //go-module-name указывается при инициализацию go.mod и так же в нём указывается
 option go_package = "Bionic-Web-Control/proto/staingauge";
 //датчики давления на кончиках пальцев

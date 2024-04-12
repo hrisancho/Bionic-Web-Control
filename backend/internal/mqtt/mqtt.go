@@ -4,6 +4,10 @@ import (
 	"Bionic-Web-Control/internal/config"
 	main_logger "Bionic-Web-Control/internal/logger"
 	"Bionic-Web-Control/proto/commands"
+	"Bionic-Web-Control/proto/imu"
+	"Bionic-Web-Control/proto/potentiometer"
+	"Bionic-Web-Control/proto/servo"
+	"Bionic-Web-Control/proto/straingauge"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -14,12 +18,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	// TODO поправить на существующие протографы
 )
 
 var (
-	//ControllerSubscriptionHandlerNotFound = errors.New("ControllerSubscriptionHandlerMQTT not found")
 	notificationsTopicRegexp = regexp.MustCompile(`^controller/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/notifications/(.*)$`)
 )
 
@@ -27,6 +31,15 @@ type ClientMQTT struct {
 	logger *main_logger.Logger
 	config config.Config
 	client mqtt.Client
+	// uuid в качестве ключа
+	storageRawImu     map[string]*imu.IMU
+	storageProcessImu map[string]*imu.ResultIMU
+	// uuid в качестве первого ключа, а качестве второго палец
+	storageStrainGauge map[string]map[string]*staingauge.StrainGuage
+	// uuid в качестве первого ключа, а в качестве второго позиция сервопривод
+	storageServoInfo map[string]map[string]*servo.Servo
+	// uuid в качестве первого ключа, а в качестве второго палец
+	storagePotentiometerAngle map[string]map[string]*potentiometer.Potentiometer
 }
 
 func NewClientMQTT(
@@ -98,6 +111,55 @@ func NewClientMQTT(
 	return
 }
 
+func (clientMQTT *ClientMQTT) ImuRawData(uuid int) (msgImuRaw *imu.IMU, err error) {
+	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
+	getConfigRequestCtxTimeout := atomic.Bool{}
+	getConfigRequestCtxTimeout.Store(true)
+	defer getConfigRequestCtxCancel()
+	var reqest []byte
+	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/raw-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
+		reqest = msg.Payload()[:]
+		getConfigRequestCtxTimeout.Store(false)
+		getConfigRequestCtxCancel()
+
+	})
+	<-getConfigRequestCtx.Done()
+	bufReqest := &imu.IMU{}
+	err = proto.Unmarshal(reqest, bufReqest)
+	if err != nil {
+		return
+	}
+	msgImuRaw = bufReqest
+	return
+}
+
+func (clientMQTT *ClientMQTT) ImuProcData(uuid int) (msgImuProcData *imu.ResultIMU, err error) {
+	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
+	getConfigRequestCtxTimeout := atomic.Bool{}
+	getConfigRequestCtxTimeout.Store(true)
+	defer getConfigRequestCtxCancel()
+	var reqest []byte
+	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/processed-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
+		reqest = msg.Payload()[:]
+		getConfigRequestCtxTimeout.Store(false)
+		getConfigRequestCtxCancel()
+
+	})
+	<-getConfigRequestCtx.Done()
+	bufReqest := &imu.ResultIMU{}
+	err = proto.Unmarshal(reqest, bufReqest)
+	if err != nil {
+		return
+	}
+	msgImuProcData = bufReqest
+	return
+}
+
+func (clientMQTT *ClientMQTT) StrainGaugeByFingerId(uuid int) (msgStrainGauge *staingauge.StrainGuage, err error) {
+
+}
+
+// Ниже идут методы для взаимодействие с командами для контроллера
 func (clientMQTT *ClientMQTT) HandServoToAngle(uuid int, msg *commands.ServoGoToAngle) (err error) {
 	// Передаем полностью обработанное сообщение
 	msgMarshal, err := proto.Marshal(msg)
@@ -105,7 +167,7 @@ func (clientMQTT *ClientMQTT) HandServoToAngle(uuid int, msg *commands.ServoGoTo
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-go-to-angle", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-go-to-angle", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -123,7 +185,7 @@ func (clientMQTT *ClientMQTT) HandServoLock(uuid int, msg *commands.ServoLock) (
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-lock", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-lock", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -141,7 +203,7 @@ func (clientMQTT *ClientMQTT) HandServoUnLock(uuid int, msg *commands.ServoUnLoc
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-unlock", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-unlock", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -159,7 +221,7 @@ func (clientMQTT *ClientMQTT) HandServoSmoothlyMove(uuid int, msg *commands.Serv
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-smoothly-move", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-smoothly-move", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -176,7 +238,7 @@ func (clientMQTT *ClientMQTT) MoveToTargetPressure(uuid int, msg *commands.MoveT
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/move-target-pressure", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/move-target-pressure", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -194,7 +256,7 @@ func (clientMQTT *ClientMQTT) ServoHoldGesture(uuid int, msg *commands.HoldGestu
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/hold-gesture", 0, true, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/hold-gesture", clientMQTT.config.MqttQOS, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()

@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// функция, задающая скорость движения от времениы
+// функция, задающая скорость движения от времени
 type Easings int32
 
 const (
@@ -70,7 +70,7 @@ type Gestures int32
 
 const (
 	Gestures_neutral  Gestures = 0 //Прямая ладоно
-	Gestures_grip     Gestures = 1
+	Gestures_grip     Gestures = 1 // схватить
 	Gestures_boatGrip Gestures = 2 //захват без сгибания большого пальца, но с его приведением
 	Gestures_like     Gestures = 3
 	Gestures_victoria Gestures = 4

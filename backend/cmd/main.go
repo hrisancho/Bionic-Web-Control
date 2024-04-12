@@ -40,6 +40,7 @@ func main() {
 		logger,
 		mainConfig,
 	)
+
 	if err != nil {
 		log.Fatal(err)
 	}

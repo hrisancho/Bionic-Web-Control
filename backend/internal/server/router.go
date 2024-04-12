@@ -12,8 +12,24 @@ func (server Server) SetupRoutes() {
 	api := server.App.Group("/api")
 	apiV1 := api.Group("/v1")
 	apiHand := apiV1.Group("/hand")
+	//
+	// TODO !!!! Изменить взаимодействие для uuid так как сейчас uuid это int значение, а не строковое !!!
+	//
 	// TODO сделать проверку ограничений, посмотреть на сколько правильность работы при не валидируемых данных
 	// TODO стоит ли проверять входные запросы на полноту входящих данных
+	// TODO При выгрузке данных удалить лишние print в терминал
+	apiHand.Get("/:uuid/monitoring/imu/raw-data", server.handImuRawData)
+	apiHand.Get("/:uuid/monitoring/imu/processed-data", server.handImuProcData)
+
+	apiHand.Get("/:uuid/monitoring/strain-gauge/all-finger", server.handStrainGaugeFingerAll)
+	apiHand.Get("/:uuid/monitoring/strain-gauge/finger-id/:finger_id", server.handStrainGaugeByFingerId)
+	//
+	//apiHand.Get("/:uuid/monitoring/servo/info/all-servo", server.handServoInfoAll)
+	//apiHand.Get("/:uuid/monitoring/servo/info/servo-id/:servo_id", server.handServoInfoByServoId)
+	//
+	//apiHand.Get("/:uuid/monitoring/potentiometer/all-potentiometer", server.handPotentiometerAll)
+	//apiHand.Get("/:uuid/monitoring/potentiometer/finger-id/:finger_id", server.handPotentiometerByFingerId)
+	//apiHand.Get("/:uuid/monitoring/potentiometer/finger-id/:finger_id/position-id/:position_id", server.handPotentiometerByID)
 
 	// Все команды ниже являются работоспособными и могут использоваться
 

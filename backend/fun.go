@@ -1,10 +1,6 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"github.com/gofiber/fiber/v2"
-)
+import "fmt"
 
 type User struct {
 	Age    int    `json:"age"`
@@ -13,23 +9,9 @@ type User struct {
 }
 
 func main() {
-	app := fiber.New()
-
-	app.Get("/user/:userid", func(c *fiber.Ctx) error {
-		user := new(User)
-		err := c.BodyParser(user)
-		if err != nil {
-			return err
-		}
-		fmt.Println(user.Age)
-		fmt.Println(user.Name)
-		fmt.Println(user.UserID)
-
-		user.Age += 1
-		userJSON, _ := json.Marshal(user)
-
-		return c.JSON(userJSON)
-	})
-
-	app.Listen(":8888")
+	fmt.Println(hi())
+}
+func hi() (st string) {
+	st = "sadf"
+	return st
 }
