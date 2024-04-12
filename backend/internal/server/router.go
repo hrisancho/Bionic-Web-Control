@@ -12,8 +12,11 @@ func (server Server) SetupRoutes() {
 	api := server.App.Group("/api")
 	apiV1 := api.Group("/v1")
 	apiHand := apiV1.Group("/hand")
+	// TODO сделать проверку ограничений, посмотреть на сколько правильность работы при не валидируемых данных
+	// TODO стоит ли проверять входные запросы на полноту входящих данных
 
-	// TODO изменить названия запросов
+	// Все команды ниже являются работоспособными и могут использоваться
+
 	// /api/v1/hand/:uuid/commands/servo-go-to-angle/:servo_id
 	// JSON:
 	//{

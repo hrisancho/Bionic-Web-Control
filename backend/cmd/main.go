@@ -20,7 +20,7 @@ func main() {
 	defer ctxCancel()
 
 	//TODO полностью переписать docker-compose файл
-	//TODO Срочно добавить swager сервер для проверки http api
+	//TODO Добавить swagger сервер для проверки http api
 
 	mainValidator, err := app_validator.NewValidator()
 

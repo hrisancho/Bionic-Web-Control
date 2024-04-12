@@ -44,6 +44,8 @@ func (server *Server) handServoToAngle(c *fiber.Ctx) error {
 		Angle: jsonRequest.Angle,
 	}
 
+	fmt.Println(msg)
+
 	err = server.clientMQTT.HandServoToAngle(uuid, msg)
 	if err != nil {
 		return err
@@ -69,6 +71,9 @@ func (server *Server) handServoLock(c *fiber.Ctx) error {
 	msg := &commands.ServoLock{
 		Servo: srvPosition,
 	}
+
+	fmt.Println(msg)
+
 	err = server.clientMQTT.HandServoLock(uuid, msg)
 	if err != nil {
 		return err
@@ -94,6 +99,9 @@ func (server *Server) handServoUnlock(c *fiber.Ctx) error {
 	msg := &commands.ServoUnLock{
 		Servo: srvPosition,
 	}
+
+	fmt.Println(msg)
+
 	err = server.clientMQTT.HandServoUnLock(uuid, msg)
 	if err != nil {
 		return err
@@ -135,6 +143,7 @@ func (server *Server) handServoSmoothlyMove(c *fiber.Ctx) error {
 		Speed:       jsonRequest.Speed,
 		TargetAngle: jsonRequest.TargetAngle,
 	}
+
 	fmt.Println(msg)
 
 	err = server.clientMQTT.HandServoSmoothlyMove(uuid, msg)
@@ -175,12 +184,11 @@ func (server *Server) handMoveToTargetPressure(c *fiber.Ctx) error {
 	}
 	fngPosition := shared.Finger(uint32(fng))
 
-	fmt.Println(fngPosition)
-
 	msg := &commands.MoveToTargetPressure{
 		Servo:  srvPosition,
 		Finger: fngPosition,
 	}
+
 	fmt.Println(msg)
 
 	err = server.clientMQTT.MoveToTargetPressure(uuid, msg)
@@ -219,6 +227,8 @@ func (server *Server) handServoHoldGesture(c *fiber.Ctx) error {
 		Duration:  jsonRequest.Duration,
 		Permanent: jsonRequest.Permanent,
 	}
+
+	fmt.Println(msg)
 
 	err = server.clientMQTT.ServoHoldGesture(uuid, msg)
 	if err != nil {

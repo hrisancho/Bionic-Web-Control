@@ -105,8 +105,7 @@ func (clientMQTT *ClientMQTT) HandServoToAngle(uuid int, msg *commands.ServoGoTo
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/servo-go-to-angle", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-go-to-angle", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -124,8 +123,7 @@ func (clientMQTT *ClientMQTT) HandServoLock(uuid int, msg *commands.ServoLock) (
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/servo-lock", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-lock", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -143,8 +141,7 @@ func (clientMQTT *ClientMQTT) HandServoUnLock(uuid int, msg *commands.ServoUnLoc
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/servo-unlock", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-unlock", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -162,8 +159,7 @@ func (clientMQTT *ClientMQTT) HandServoSmoothlyMove(uuid int, msg *commands.Serv
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/servo-smoothly-move", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-smoothly-move", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -180,8 +176,7 @@ func (clientMQTT *ClientMQTT) MoveToTargetPressure(uuid int, msg *commands.MoveT
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/move-target-pressure", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/move-target-pressure", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()
@@ -199,8 +194,7 @@ func (clientMQTT *ClientMQTT) ServoHoldGesture(uuid int, msg *commands.HoldGestu
 		return
 	}
 	// На всякий случай сохраняем сообщения
-	// TODO стоит ли сохранять сообщения (да)?
-	token := clientMQTT.client.Publish(strconv.Itoa(uuid)+"/robohand/commands/hold-gesture", 0, false, msgMarshal)
+	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/hold-gesture", 0, true, msgMarshal)
 	token.Wait()
 
 	err = token.Error()

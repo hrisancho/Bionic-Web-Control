@@ -1,60 +1,60 @@
 version: '3.9'
 #TODO полностью переписать docker-compose файл
 services:
-  # API server
-  api:
-    container_name: api
-    env_file: .env
-    environment:
-      - DB_SOURCE=${DB_SOURCE:?}
-      - SERVER_ADDR=${SERVER_ADDR:-0.0.0.0:8080}
-      - SITE_URL=${HTTP_PROTOCOL:?}://${PUBLIC_ADDR:?}
-      - TIME_FORMAT=${TIME_FORMAT:-02.01.06 15:04:05}
-      - LOG_FILE=${LOG_FILE:-./logs/main.log}
-      - SECRET=${SECRET:?}
-      - DEFAULT_SUPER_ADMIN_PASSWORD=${DEFAULT_SUPER_ADMIN_PASSWORD:?}
-      - DEFAULT_SUPER_ADMIN_EMAIL=${DEFAULT_SUPER_ADMIN_EMAIL:?}
-      - DEFAULT_COMPANY_NAME=${DEFAULT_COMPANY_NAME:?}
-      - TOKEN_TG=${TOKEN_TG:?}
-      - TZ=${TZ_NAME:?}
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-      - "50051:50051"
-    restart: on-failure
-    volumes:
-      - ./backend/config:/app/config
-      - ./backend/static:/app/static
-    networks:
-      - main
-    depends_on:
-      - postgres
-
-  # frontend
-  frontend:
-    container_name: frontend
-    env_file: .env
-    environment:
-      - PORT=8081
-      - PROTOCOL_HEADER=X-Forwarded-Proto
-      - HOST_HEADER=X-Forwarded-For
-      - ADDRESS_HEADER=X-Real-IP
-      - ORIGIN=${HTTP_PROTOCOL:?}://${PUBLIC_ADDR:?}
-    build:
-      context: ./frontend/smart-doors-server
-      dockerfile: Dockerfile
-      args:
-        HTTP_PROTOCOL: ${HTTP_PROTOCOL:?}
-        WS_PROTOCOL: ${WS_PROTOCOL:?}
-        PUBLIC_ADDR: ${PUBLIC_ADDR:?}
-        PUBLIC_PAGE_LIMIT: ${PUBLIC_PAGE_LIMIT:?}
-    restart: on-failure
-    networks:
-      - main
-    depends_on:
-      - api
+#  # API server
+#  api:
+#    container_name: api
+#    env_file: .env
+#    environment:
+#      - DB_SOURCE=${DB_SOURCE:?}
+#      - SERVER_ADDR=${SERVER_ADDR:-0.0.0.0:8080}
+#      - SITE_URL=${HTTP_PROTOCOL:?}://${PUBLIC_ADDR:?}
+#      - TIME_FORMAT=${TIME_FORMAT:-02.01.06 15:04:05}
+#      - LOG_FILE=${LOG_FILE:-./logs/main.log}
+#      - SECRET=${SECRET:?}
+#      - DEFAULT_SUPER_ADMIN_PASSWORD=${DEFAULT_SUPER_ADMIN_PASSWORD:?}
+#      - DEFAULT_SUPER_ADMIN_EMAIL=${DEFAULT_SUPER_ADMIN_EMAIL:?}
+#      - DEFAULT_COMPANY_NAME=${DEFAULT_COMPANY_NAME:?}
+#      - TOKEN_TG=${TOKEN_TG:?}
+#      - TZ=${TZ_NAME:?}
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080"
+#      - "50051:50051"
+#    restart: on-failure
+#    volumes:
+#      - ./backend/config:/app/config
+#      - ./backend/static:/app/static
+#    networks:
+#      - main
+#    depends_on:
+#      - postgres
+#
+#  # frontend
+#  frontend:
+#    container_name: frontend
+#    env_file: .env
+#    environment:
+#      - PORT=8081
+#      - PROTOCOL_HEADER=X-Forwarded-Proto
+#      - HOST_HEADER=X-Forwarded-For
+#      - ADDRESS_HEADER=X-Real-IP
+#      - ORIGIN=${HTTP_PROTOCOL:?}://${PUBLIC_ADDR:?}
+#    build:
+#      context: ./frontend/smart-doors-server
+#      dockerfile: Dockerfile
+#      args:
+#        HTTP_PROTOCOL: ${HTTP_PROTOCOL:?}
+#        WS_PROTOCOL: ${WS_PROTOCOL:?}
+#        PUBLIC_ADDR: ${PUBLIC_ADDR:?}
+#        PUBLIC_PAGE_LIMIT: ${PUBLIC_PAGE_LIMIT:?}
+#    restart: on-failure
+#    networks:
+#      - main
+#    depends_on:
+#      - api
 
 
   emqx:
@@ -76,63 +76,63 @@ services:
     networks:
       - main
   
-  # postgres
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    env_file: .env
-    environment:
-      - TZ=${TZ:?}
-      - PGTZ=${TZ:?}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    networks:
-      - main
-    logging:
-      driver: "none"
-
-  pgadmin:
-    container_name: pgadmin4
-    env_file: .env
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-      - PGADMIN_DEFAULT_PASSWORD=${PG_ADMIN_PSWD:?}
-    ports:
-      - "8085:80"
-    networks:
-      - main
-    depends_on:
-      - postgres
-    logging:
-      driver: "none"
-
-  nginx:
-    image: staticfloat/nginx-certbot
-    restart: always
-    ports:
-        - "80:80/tcp"
-        - "443:443/tcp"
-    environment:
-        CERTBOT_EMAIL: ${CERTBOT_EMAIL:?}
-        ENVSUBST_VARS: DOMAIN
-        DOMAIN: ${PUBLIC_ADDR:?}
-    volumes:
-      - ./nginx:/etc/nginx/user.conf.d:ro
-      - letsencrypt:/etc/letsencrypt
-    networks:
-      - main
-    depends_on:
-      - frontend
+#  # postgres
+#  postgres:
+#    image: postgres:15
+#    container_name: postgres
+#    env_file: .env
+#    environment:
+#      - TZ=${TZ:?}
+#      - PGTZ=${TZ:?}
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - pg_data:/var/lib/postgresql/data
+#    networks:
+#      - main
+#    logging:
+#      driver: "none"
+#
+#  pgadmin:
+#    container_name: pgadmin4
+#    env_file: .env
+#    image: dpage/pgadmin4
+#    restart: always
+#    environment:
+#      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+#      - PGADMIN_DEFAULT_PASSWORD=${PG_ADMIN_PSWD:?}
+#    ports:
+#      - "8085:80"
+#    networks:
+#      - main
+#    depends_on:
+#      - postgres
+#    logging:
+#      driver: "none"
+#
+#  nginx:
+#    image: staticfloat/nginx-certbot
+#    restart: always
+#    ports:
+#        - "80:80/tcp"
+#        - "443:443/tcp"
+#    environment:
+#        CERTBOT_EMAIL: ${CERTBOT_EMAIL:?}
+#        ENVSUBST_VARS: DOMAIN
+#        DOMAIN: ${PUBLIC_ADDR:?}
+#    volumes:
+#      - ./nginx:/etc/nginx/user.conf.d:ro
+#      - letsencrypt:/etc/letsencrypt
+#    networks:
+#      - main
+#    depends_on:
+#      - frontend
 
 networks:
   main:
     driver: bridge
-
-volumes:
-  pg_data:
-  gf_data:
-  letsencrypt:
+#
+#volumes:
+#  pg_data:
+#  gf_data:
+#  letsencrypt:
