@@ -7,6 +7,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func (server *Server) handInitSubscribeToUUID(c *fiber.Ctx) error {
+	// TODO доделать, как минимум написать reqest
+	uuid := c.Params("uuid")
+	err := server.clientMQTT.InitSubscribeToUUID(uuid)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return nil
+}
+
 // TODO добавить тупой request без проверки правильность
 
 type ServoGoToAngle struct {
@@ -19,14 +29,9 @@ type ServoGoToAngle struct {
 //		"angle" : 56.5, это угол передаётся через json
 //	}
 func (server *Server) handServoToAngle(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
+
 	servoId := c.Params("servo_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Сервопривод указан не правильно")
@@ -34,7 +39,7 @@ func (server *Server) handServoToAngle(c *fiber.Ctx) error {
 	srvPosition := shared.ServoPosition(uint32(srv))
 
 	jsonRequest := new(ServoGoToAngle)
-	err = c.BodyParser(jsonRequest)
+	err := c.BodyParser(jsonRequest)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -54,14 +59,8 @@ func (server *Server) handServoToAngle(c *fiber.Ctx) error {
 }
 
 func (server *Server) handServoLock(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
 	servoId := c.Params("servo_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Сервопривод указан не правильно")
@@ -74,7 +73,7 @@ func (server *Server) handServoLock(c *fiber.Ctx) error {
 
 	fmt.Println(msg)
 
-	err = server.clientMQTT.HandServoLock(uuid, msg)
+	err := server.clientMQTT.HandServoLock(uuid, msg)
 	if err != nil {
 		return err
 	}
@@ -82,14 +81,8 @@ func (server *Server) handServoLock(c *fiber.Ctx) error {
 }
 
 func (server *Server) handServoUnlock(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
 	servoId := c.Params("servo_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Сервопривод указан не правильно")
@@ -102,7 +95,7 @@ func (server *Server) handServoUnlock(c *fiber.Ctx) error {
 
 	fmt.Println(msg)
 
-	err = server.clientMQTT.HandServoUnLock(uuid, msg)
+	err := server.clientMQTT.HandServoUnLock(uuid, msg)
 	if err != nil {
 		return err
 	}
@@ -112,14 +105,8 @@ func (server *Server) handServoUnlock(c *fiber.Ctx) error {
 // //Постепенное движение сервоприводом
 
 func (server *Server) handServoSmoothlyMove(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
 	servoId := c.Params("servo_id")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
 		return fiber.NewError(fiber.StatusBadRequest, "Сервопривод указан не правильно")
@@ -127,7 +114,7 @@ func (server *Server) handServoSmoothlyMove(c *fiber.Ctx) error {
 	srvPosition := shared.ServoPosition(uint32(srv))
 
 	jsonRequest := new(ServoSmoothlyMove)
-	err = c.BodyParser(jsonRequest)
+	err := c.BodyParser(jsonRequest)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -160,10 +147,7 @@ type ServoSmoothlyMove struct {
 }
 
 func (server *Server) handMoveToTargetPressure(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
 	servoId := c.Params("servo_id")
 	srv, fun := shared.ServoPosition_value[servoId]
 	if !fun {
@@ -185,7 +169,7 @@ func (server *Server) handMoveToTargetPressure(c *fiber.Ctx) error {
 
 	fmt.Println(msg)
 
-	err = server.clientMQTT.MoveToTargetPressure(uuid, msg)
+	err := server.clientMQTT.MoveToTargetPressure(uuid, msg)
 	if err != nil {
 		return err
 	}
@@ -199,13 +183,9 @@ type HoldGesture struct {
 }
 
 func (server *Server) handServoHoldGesture(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-	//
+	uuid := c.Params("uuid")
 	jsonRequest := new(HoldGesture)
-	err = c.BodyParser(jsonRequest)
+	err := c.BodyParser(jsonRequest)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}

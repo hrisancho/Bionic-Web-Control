@@ -6,18 +6,9 @@ import (
 )
 
 func (server *Server) handImuRawData(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	msg, err := server.clientMQTT.ImuRawData(uuid)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
+	uuid := c.Params("uuid")
+	msg := server.clientMQTT.StorageRawImu[uuid]
 	fmt.Println(msg)
-
 	return c.JSON(fiber.Map{
 		"uuid":          uuid,
 		"number":        msg.Number,
@@ -32,22 +23,18 @@ func (server *Server) handImuRawData(c *fiber.Ctx) error {
 }
 
 func (server *Server) handImuProcData(c *fiber.Ctx) error {
-	uuid, err := c.ParamsInt("uuid")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	uuid := c.Params("uuid")
 
-	msg, err := server.clientMQTT.ImuProcData(uuid)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
+	msg := server.clientMQTT.StorageProcessImu[uuid]
 	fmt.Println(msg)
 
 	return c.JSON(fiber.Map{
 		"uuid":   uuid,
-		"xAccel": msg.XAccel,
-		"yAccel": msg.YAccel,
-		"zAccel": msg.ZAccel,
+		"xAccel": msg.XPos,
+		"yAccel": msg.YPos,
+		"zAccel": msg.ZPos,
+		"xAngle": msg.XAngle,
+		"yAngle": msg.YAngle,
+		"zAngle": msg.ZAngle,
 	})
 }

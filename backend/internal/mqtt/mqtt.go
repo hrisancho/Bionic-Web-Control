@@ -3,7 +3,6 @@ package mqtt
 import (
 	"Bionic-Web-Control/internal/config"
 	main_logger "Bionic-Web-Control/internal/logger"
-	"Bionic-Web-Control/proto/commands"
 	"Bionic-Web-Control/proto/imu"
 	"Bionic-Web-Control/proto/potentiometer"
 	"Bionic-Web-Control/proto/servo"
@@ -11,14 +10,13 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 	// TODO поправить на существующие протографы
 )
@@ -32,14 +30,14 @@ type ClientMQTT struct {
 	config config.Config
 	client mqtt.Client
 	// uuid в качестве ключа
-	storageRawImu     map[string]*imu.IMU
-	storageProcessImu map[string]*imu.ResultIMU
+	StorageRawImu     map[string]*imu.IMU
+	StorageProcessImu map[string]*imu.ResultIMU
 	// uuid в качестве первого ключа, а качестве второго палец
-	storageStrainGauge map[string]map[string]*staingauge.StrainGuage
+	StorageStrainGauge map[string]map[string]*staingauge.StrainGuage
 	// uuid в качестве первого ключа, а в качестве второго позиция сервопривод
-	storageServoInfo map[string]map[string]*servo.Servo
+	StorageServoInfo map[string]map[string]*servo.Servo
 	// uuid в качестве первого ключа, а в качестве второго палец
-	storagePotentiometerAngle map[string]map[string]*potentiometer.Potentiometer
+	StoragePotentiometerAngle map[string]map[string]*potentiometer.Potentiometer
 }
 
 func NewClientMQTT(
@@ -107,165 +105,144 @@ func NewClientMQTT(
 		err = token.Error()
 		return
 	}
-
+	// Инициализация хранилищ, для быстрого сохранения и получения информации из них
+	clientMQTT.StorageRawImu = make(map[string]*imu.IMU)
+	clientMQTT.StorageProcessImu = make(map[string]*imu.ResultIMU)
+	clientMQTT.StorageStrainGauge = make(map[string]map[string]*staingauge.StrainGuage)
+	clientMQTT.StorageServoInfo = make(map[string]map[string]*servo.Servo)
+	clientMQTT.StoragePotentiometerAngle = make(map[string]map[string]*potentiometer.Potentiometer)
 	return
 }
 
-func (clientMQTT *ClientMQTT) ImuRawData(uuid int) (msgImuRaw *imu.IMU, err error) {
-	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
-	getConfigRequestCtxTimeout := atomic.Bool{}
-	getConfigRequestCtxTimeout.Store(true)
-	defer getConfigRequestCtxCancel()
-	var reqest []byte
-	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/raw-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
-		reqest = msg.Payload()[:]
-		getConfigRequestCtxTimeout.Store(false)
-		getConfigRequestCtxCancel()
-
-	})
-	<-getConfigRequestCtx.Done()
-	bufReqest := &imu.IMU{}
-	err = proto.Unmarshal(reqest, bufReqest)
-	if err != nil {
-		return
-	}
-	msgImuRaw = bufReqest
+// TODO стоит ли сравнивать предыдущее значение с нынешенем только что полученным для дальнейшего изменения (WebSocket)
+func (clientMQTT *ClientMQTT) InitSubscribeToUUID(uuid string) (err error) {
+	clientMQTT.client.Subscribe("robohand/"+uuid+"/monitoring/IMU/raw-data", clientMQTT.config.MqttQOS, clientMQTT.ImuRawData)
+	clientMQTT.client.Subscribe("robohand/"+uuid+"/monitoring/IMU/processed-data", clientMQTT.config.MqttQOS, clientMQTT.ImuProcessData)
+	clientMQTT.client.Subscribe("robohand/"+uuid+"/monitoring/strain_gauge/pressure-at-fingertips", clientMQTT.config.MqttQOS, clientMQTT.StrainGaugeFingertips)
+	clientMQTT.client.Subscribe("robohand/"+uuid+"/monitoring/servo/info", clientMQTT.config.MqttQOS, clientMQTT.ServoInfo)
+	clientMQTT.client.Subscribe("robohand/"+uuid+"/monitoring/potentiometer/angle-measurement", clientMQTT.config.MqttQOS, clientMQTT.PotentiomAngle)
 	return
 }
-
-func (clientMQTT *ClientMQTT) ImuProcData(uuid int) (msgImuProcData *imu.ResultIMU, err error) {
-	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
-	getConfigRequestCtxTimeout := atomic.Bool{}
-	getConfigRequestCtxTimeout.Store(true)
-	defer getConfigRequestCtxCancel()
-	var reqest []byte
-	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/processed-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
-		reqest = msg.Payload()[:]
-		getConfigRequestCtxTimeout.Store(false)
-		getConfigRequestCtxCancel()
-
-	})
-	<-getConfigRequestCtx.Done()
-	bufReqest := &imu.ResultIMU{}
-	err = proto.Unmarshal(reqest, bufReqest)
+func (clientMQTT *ClientMQTT) ImuRawData(client mqtt.Client, msg mqtt.Message) {
+	uuid := TopicToUUID(msg.Topic())
+	reqest := msg.Payload()[:]
+	imuMsg := &imu.IMU{}
+	err := proto.Unmarshal(reqest, imuMsg)
 	if err != nil {
-		return
+		clientMQTT.logger.Warn("MQTT: ImuRawData", zap.Error(err))
 	}
-	msgImuProcData = bufReqest
-	return
+	fmt.Println(imuMsg)
+	clientMQTT.StorageRawImu[uuid] = imuMsg
+	fmt.Println(clientMQTT.StorageRawImu)
 }
 
-func (clientMQTT *ClientMQTT) StrainGaugeByFingerId(uuid int) (msgStrainGauge *staingauge.StrainGuage, err error) {
-
-}
-
-// Ниже идут методы для взаимодействие с командами для контроллера
-func (clientMQTT *ClientMQTT) HandServoToAngle(uuid int, msg *commands.ServoGoToAngle) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
+func (clientMQTT *ClientMQTT) ImuProcessData(client mqtt.Client, msg mqtt.Message) {
+	uuid := TopicToUUID(msg.Topic())
+	reqest := msg.Payload()[:]
+	imuProcMsg := &imu.ResultIMU{}
+	err := proto.Unmarshal(reqest, imuProcMsg)
 	if err != nil {
-		return
+		clientMQTT.logger.Warn("MQTT: ImuProcessData", zap.Error(err))
 	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-go-to-angle", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
-
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
+	fmt.Println(imuProcMsg)
+	clientMQTT.StorageProcessImu[uuid] = imuProcMsg
+	fmt.Println(clientMQTT.StorageProcessImu)
 }
 
-func (clientMQTT *ClientMQTT) HandServoLock(uuid int, msg *commands.ServoLock) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
+func (clientMQTT *ClientMQTT) StrainGaugeFingertips(client mqtt.Client, msg mqtt.Message) {
+	uuid := TopicToUUID(msg.Topic())
+	reqest := msg.Payload()[:]
+	stnFingertips := &staingauge.StrainGuage{}
+	err := proto.Unmarshal(reqest, stnFingertips)
 	if err != nil {
-		return
+		clientMQTT.logger.Warn("MQTT: StrainGaugeFingertips", zap.Error(err))
 	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-lock", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
 
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
+	fmt.Println(uuid)
+	fmt.Println(stnFingertips)
+
+	clientMQTT.StorageStrainGauge[uuid] = make(map[string]*staingauge.StrainGuage)
+	clientMQTT.StorageStrainGauge[uuid][stnFingertips.Finger.String()] = stnFingertips
+	fmt.Println(clientMQTT.StorageStrainGauge)
 }
 
-func (clientMQTT *ClientMQTT) HandServoUnLock(uuid int, msg *commands.ServoUnLock) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
+func (clientMQTT *ClientMQTT) ServoInfo(client mqtt.Client, msg mqtt.Message) {
+	uuid := TopicToUUID(msg.Topic())
+	reqest := msg.Payload()[:]
+	srvInfo := &servo.Servo{}
+	err := proto.Unmarshal(reqest, srvInfo)
 	if err != nil {
-		return
+		clientMQTT.logger.Warn("MQTT: ServoInfo", zap.Error(err))
 	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-unlock", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
+	fmt.Println(srvInfo)
 
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
+	clientMQTT.StorageServoInfo[uuid] = make(map[string]*servo.Servo)
+	clientMQTT.StorageServoInfo[uuid][srvInfo.Servo.String()] = srvInfo
+	fmt.Println(clientMQTT.StorageServoInfo)
 }
 
-func (clientMQTT *ClientMQTT) HandServoSmoothlyMove(uuid int, msg *commands.ServoSmoothlyMove) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
+func (clientMQTT *ClientMQTT) PotentiomAngle(client mqtt.Client, msg mqtt.Message) {
+	uuid := TopicToUUID(msg.Topic())
+	reqest := msg.Payload()[:]
+	potentiometAngle := &potentiometer.Potentiometer{}
+	err := proto.Unmarshal(reqest, potentiometAngle)
 	if err != nil {
-		return
+		clientMQTT.logger.Warn("MQTT: PotentiomAngle", zap.Error(err))
 	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/servo-smoothly-move", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
-
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
-}
-func (clientMQTT *ClientMQTT) MoveToTargetPressure(uuid int, msg *commands.MoveToTargetPressure) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
-	if err != nil {
-		return
-	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/move-target-pressure", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
-
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
+	fmt.Println(potentiometAngle)
+	clientMQTT.StoragePotentiometerAngle[uuid] = make(map[string]*potentiometer.Potentiometer)
+	clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()] = potentiometAngle
+	fmt.Println(clientMQTT.StoragePotentiometerAngle)
 }
 
-func (clientMQTT *ClientMQTT) ServoHoldGesture(uuid int, msg *commands.HoldGesture) (err error) {
-	// Передаем полностью обработанное сообщение
-	msgMarshal, err := proto.Marshal(msg)
-	if err != nil {
-		return
-	}
-	// На всякий случай сохраняем сообщения
-	token := clientMQTT.client.Publish("robohand/"+strconv.Itoa(uuid)+"/commands/hold-gesture", clientMQTT.config.MqttQOS, true, msgMarshal)
-	token.Wait()
+func TopicToUUID(topic string) string {
+	return strings.Split(topic, "/")[1]
 
-	err = token.Error()
-	if token.Error() != nil {
-		err = token.Error()
-		return
-	}
-	return nil
 }
+
+//func (clientMQTT *ClientMQTT) ImuRawData(uuid int) (msgImuRaw *imu.IMU, err error) {client mqtt.Client, msg mqtt.Message
+//	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
+//	getConfigRequestCtxTimeout := atomic.Bool{}
+//	getConfigRequestCtxTimeout.Store(true)
+//	defer getConfigRequestCtxCancel()
+//	var reqest []byte
+//	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/raw-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
+//		reqest = msg.Payload()[:]
+//		getConfigRequestCtxTimeout.Store(false)
+//		getConfigRequestCtxCancel()
+//
+//	})
+//	<-getConfigRequestCtx.Done()
+//	bufReqest := &imu.IMU{}
+//	err = proto.Unmarshal(reqest, bufReqest)
+//	if err != nil {
+//		return
+//	}
+//	msgImuRaw = bufReqest
+//	return
+//}
+
+//func (clientMQTT *ClientMQTT) ImuProcData(uuid int) (msgImuProcData *imu.ResultIMU, err error) {
+//	getConfigRequestCtx, getConfigRequestCtxCancel := context.WithTimeout(context.Background(), time.Second*20)
+//	getConfigRequestCtxTimeout := atomic.Bool{}
+//	getConfigRequestCtxTimeout.Store(true)
+//	defer getConfigRequestCtxCancel()
+//	var reqest []byte
+//	clientMQTT.client.Subscribe("robohand/"+strconv.Itoa(uuid)+"/monitoring/IMU/processed-data", clientMQTT.config.MqttQOS, func(client mqtt.Client, msg mqtt.Message) {
+//		reqest = msg.Payload()[:]
+//		getConfigRequestCtxTimeout.Store(false)
+//		getConfigRequestCtxCancel()
+//
+//	})
+//	<-getConfigRequestCtx.Done()
+//	bufReqest := &imu.ResultIMU{}
+//	err = proto.Unmarshal(reqest, bufReqest)
+//	if err != nil {
+//		return
+//	}
+//	msgImuProcData = bufReqest
+//	return
+//}
 
 // TODO Удалить всё что не нужно находиться внизу
 //
