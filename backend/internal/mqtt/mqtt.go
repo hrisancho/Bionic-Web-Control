@@ -18,12 +18,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	// TODO поправить на существующие протографы
 )
 
 var (
 	notificationsTopicRegexp = regexp.MustCompile(`^controller/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/notifications/(.*)$`)
 )
+
+// TODO срочно изменить storage!!
 
 type ClientMQTT struct {
 	logger *main_logger.Logger
@@ -161,7 +162,9 @@ func (clientMQTT *ClientMQTT) StrainGaugeFingertips(client mqtt.Client, msg mqtt
 	fmt.Println(uuid)
 	fmt.Println(stnFingertips)
 
-	clientMQTT.StorageStrainGauge[uuid] = make(map[string]*staingauge.StrainGuage)
+	if clientMQTT.StorageStrainGauge[uuid] == nil {
+		clientMQTT.StorageStrainGauge[uuid] = make(map[string]*staingauge.StrainGuage)
+	}
 	clientMQTT.StorageStrainGauge[uuid][stnFingertips.Finger.String()] = stnFingertips
 	fmt.Println(clientMQTT.StorageStrainGauge)
 }
@@ -176,7 +179,9 @@ func (clientMQTT *ClientMQTT) ServoInfo(client mqtt.Client, msg mqtt.Message) {
 	}
 	fmt.Println(srvInfo)
 
-	clientMQTT.StorageServoInfo[uuid] = make(map[string]*servo.Servo)
+	if clientMQTT.StorageServoInfo[uuid] == nil {
+		clientMQTT.StorageServoInfo[uuid] = make(map[string]*servo.Servo)
+	}
 	clientMQTT.StorageServoInfo[uuid][srvInfo.Servo.String()] = srvInfo
 	fmt.Println(clientMQTT.StorageServoInfo)
 }
@@ -190,7 +195,9 @@ func (clientMQTT *ClientMQTT) PotentiomAngle(client mqtt.Client, msg mqtt.Messag
 		clientMQTT.logger.Warn("MQTT: PotentiomAngle", zap.Error(err))
 	}
 	fmt.Println(potentiometAngle)
-	clientMQTT.StoragePotentiometerAngle[uuid] = make(map[string]*potentiometer.Potentiometer)
+	if clientMQTT.StoragePotentiometerAngle[uuid] == nil {
+		clientMQTT.StoragePotentiometerAngle[uuid] = make(map[string]*potentiometer.Potentiometer)
+	}
 	clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()] = potentiometAngle
 	fmt.Println(clientMQTT.StoragePotentiometerAngle)
 }

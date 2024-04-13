@@ -1,13 +1,10 @@
 package server
 
-import "github.com/gofiber/fiber/v2"
-
 // @schemes http
 func (server Server) SetupRoutes() {
-	server.App.Get("/",
-		func(c *fiber.Ctx) error {
-			return c.SendString("Hello, World!")
-		})
+
+	// TODO не работает, надо доделать
+	server.App.Static("/", "../frontend/src/pages/Home/")
 
 	api := server.App.Group("/api")
 	apiV1 := api.Group("/v1")
@@ -25,8 +22,8 @@ func (server Server) SetupRoutes() {
 	apiHand.Get("/:uuid/monitoring/imu/raw-data", server.handImuRawData)
 	apiHand.Get("/:uuid/monitoring/imu/processed-data", server.handImuProcData)
 
-	//apiHand.Get("/:uuid/monitoring/strain-gauge/all-finger", server.handStrainGaugeFingerAll)
-	//apiHand.Get("/:uuid/monitoring/strain-gauge/finger-id/:finger_id", server.handStrainGaugeByFingerId)
+	apiHand.Get("/:uuid/monitoring/strain-gauge/all-finger", server.handStrainGaugeFingerAll)
+	apiHand.Get("/:uuid/monitoring/strain-gauge/finger-id/:finger_id", server.handStrainGaugeByFingerId)
 
 	//apiHand.Get("/:uuid/monitoring/servo/info/all-servo", server.handServoInfoAll)
 	//apiHand.Get("/:uuid/monitoring/servo/info/servo-id/:servo_id", server.handServoInfoByServoId)
