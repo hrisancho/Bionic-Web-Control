@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мониторинг системы</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Мониторинг системы</h1>
+
+        <div class="input-group">
+            <label for="uuid">UUID:</label>
+            <input type="text" id="uuid" placeholder="Введите UUID">
+            <button id="refresh-button">Обновить</button>
+        </div>
+
+        <div class="data-panels">
+            <div class="data-panel" id="strain-gauge-panel">
+                <h2>Данные тензодатчиков</h2>
+                <div class="data-content"></div>
+            </div>
+
+            <div class="data-panel" id="servo-panel">
+                <h2>Данные сервоприводов</h2>
+                <div class="data-content"></div>
+            </div>
+
+            <div class="data-panel" id="potentiometer-panel">
+                <h2>Данные потенциометров</h2>
+                <div class="data-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

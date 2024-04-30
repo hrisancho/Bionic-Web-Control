@@ -75,7 +75,6 @@ services:
     #      - vol-emqx-log:/opt/emqx/log
     networks:
       - main
-  
 #  # postgres
 #  postgres:
 #    image: postgres:15

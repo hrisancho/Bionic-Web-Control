@@ -2,7 +2,6 @@ package server
 
 import (
 	"Bionic-Web-Control/proto/shared"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -25,15 +24,17 @@ func (server *Server) handStrainGaugeByFingerId(c *fiber.Ctx) error {
 	})
 }
 
+// TODO указать различие написание uuid'ов в одиночном запросе, мы получим его вместе со всем запросом, а если все пальцы то как ключ
 func (server *Server) handStrainGaugeFingerAll(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
-	msg := server.clientMQTT.StorageStrainGauge[uuid]
-	fmt.Println("!!!")
-	fmt.Println(msg)
-	fmt.Println("!!!")
-	// TODO доделать это через цикл
-	for key, value := range msg {
-		fmt.Println(key, value)
+	storage := server.clientMQTT.StorageStrainGauge[uuid]
+	msgMap := fiber.Map{}
+	msgMap["uuid"] = uuid
+	for key, val := range storage {
+		msgMap[key] = map[string]any{
+			"pressure":      val.Pressure,
+			"connectionPin": val.ConnectionPin,
+		}
 	}
-	return nil
+	return c.JSON(msgMap)
 }

@@ -35,8 +35,8 @@ type ClientMQTT struct {
 	StorageStrainGauge map[string]map[string]*staingauge.StrainGuage
 	// uuid в качестве первого ключа, а в качестве второго позиция сервопривод
 	StorageServoInfo map[string]map[string]*servo.Servo
-	// uuid в качестве первого ключа, а в качестве второго палец
-	StoragePotentiometerAngle map[string]map[string]*potentiometer.Potentiometer
+	// uuid в качестве первого ключа, а в качестве второго палец, а в качестве третьего позиция потенциометра
+	StoragePotentiometerAngle map[string]map[string]map[string]*potentiometer.Potentiometer
 }
 
 func NewClientMQTT(
@@ -109,7 +109,7 @@ func NewClientMQTT(
 	clientMQTT.StorageProcessImu = make(map[string]*imu.ResultIMU)
 	clientMQTT.StorageStrainGauge = make(map[string]map[string]*staingauge.StrainGuage)
 	clientMQTT.StorageServoInfo = make(map[string]map[string]*servo.Servo)
-	clientMQTT.StoragePotentiometerAngle = make(map[string]map[string]*potentiometer.Potentiometer)
+	clientMQTT.StoragePotentiometerAngle = make(map[string]map[string]map[string]*potentiometer.Potentiometer)
 	return
 }
 
@@ -157,7 +157,6 @@ func (clientMQTT *ClientMQTT) StrainGaugeFingertips(client mqtt.Client, msg mqtt
 		clientMQTT.logger.Warn("MQTT: StrainGaugeFingertips", zap.Error(err))
 	}
 
-	fmt.Println(uuid)
 	fmt.Println(stnFingertips)
 
 	if clientMQTT.StorageStrainGauge[uuid] == nil {
@@ -194,12 +193,16 @@ func (clientMQTT *ClientMQTT) PotentiomAngle(client mqtt.Client, msg mqtt.Messag
 	}
 	fmt.Println(potentiometAngle)
 	if clientMQTT.StoragePotentiometerAngle[uuid] == nil {
-		clientMQTT.StoragePotentiometerAngle[uuid] = make(map[string]*potentiometer.Potentiometer)
+		clientMQTT.StoragePotentiometerAngle[uuid] = make(map[string]map[string]*potentiometer.Potentiometer)
 	}
-	clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()] = potentiometAngle
+	if clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()] == nil {
+		clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()] = make(map[string]*potentiometer.Potentiometer)
+	}
+	clientMQTT.StoragePotentiometerAngle[uuid][potentiometAngle.Finger.String()][potentiometAngle.Positoin.String()] = potentiometAngle
 	fmt.Println(clientMQTT.StoragePotentiometerAngle)
 }
 
+// Нахождение uuid протеза через топик сообщения
 func TopicToUUID(topic string) string {
 	return strings.Split(topic, "/")[1]
 
